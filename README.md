@@ -36,20 +36,28 @@ ALS_Spark/
 ### 2. Run the ALS Experiment
 
 ```bash
-# Inside the container
-docker compose exec spark-master python3 /data/main.py
+# Run 1-node experiment
+./cluster.sh run1
 
-# Or mount and run locally
-docker compose exec -e SPARK_MASTER=spark://spark-master:7077 spark-master python /data/main.py
+# Run 2-node experiment
+./cluster.sh run2
+
+# Run 5-node experiment
+./cluster.sh run5
+
+# Or manually inside the container
+docker compose exec spark-master python3 /data/main.py
 ```
 
 ## Memory Configuration
 
-The cluster is configured with constrained memory to demonstrate memory pressure:
+The cluster is configured with 6GB per worker node:
 
-- **Executor Memory**: 1GB per worker (configurable via `EXECUTOR_MEMORY` env var)
-- **Driver Memory**: 1GB
-- **Total with 5 workers**: ~6GB (demonstrates data larger than single executor memory)
+- **Worker Memory**: 6GB per worker
+- **Worker Cores**: 1 core per worker
+- **Master Memory**: 3GB
+- **Executor Cores**: 1 core (matches worker)
+- **Total with 5 workers**: 33GB (3GB master + 30GB for 5 workers)
 
 ## How to Capture Spark UI Screenshots
 
@@ -206,13 +214,13 @@ Or use the automated scaling script:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | SPARK_MASTER | spark://spark-master:7077 | Spark master URL |
-| EXECUTOR_MEMORY | 1g | Memory per executor |
+| EXECUTOR_MEMORY | 6g | Memory per executor |
 
 ## Technical Notes
 
 - MovieLens 32M: ~32 million ratings, ~1GB raw CSV
 - ALS expands data in memory significantly (factor matrices)
-- With 1GB executor and ~3GB ALS memory requirement per partition, Spark will:
+- With 6GB executor and ~3GB ALS memory requirement per partition, Spark can:
   - Cache data across executors
-  - Spill to disk when memory is exceeded
+  - Handle larger partitions in memory
   - Use shuffle operations for factorization
